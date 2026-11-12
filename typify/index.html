@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Typify</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="js/theme.js"></script>
+</head>
+<body>
+  <svg id="keyboard" aria-hidden="true"></svg>
+
+  <header class="stats">
+    <div><span id="wpm">0</span> wpm</div>
+    <nav id="modes" class="modes" aria-label="Practice mode"></nav>
+    <div><span id="accuracy">100</span>% accuracy</div>
+  </header>
+
+  <main class="prompt">
+    <div id="word" class="word" aria-label="Word to type"></div>
+    <div class="hint">
+      <span id="progress" class="progress"></span>
+      <span id="hint" aria-live="polite"></span>
+    </div>
+    <div id="lights" class="lights" aria-hidden="true"></div>
+  </main>
+
+  <svg id="hands" viewBox="0 0 900 300" aria-hidden="true"></svg>
+
+  <div id="banner" class="banner" role="status"></div>
+
+  <button id="theme-toggle" class="theme-toggle" type="button"></button>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
