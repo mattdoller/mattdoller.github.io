@@ -1,0 +1,471 @@
+:root {
+  color-scheme: dark;
+
+  --bg: #14161b;
+  --text: #f2f3f5;
+  --muted: #8a8f9c;
+  --key-line: #5b6170;
+  --skin: #2b303b;
+  --skin-line: #7d8494;
+  --error: #ff6369;
+  --success: #5ccf7a;
+
+  /* How strongly letters show: key labels, typed letters, and how much of the
+     finger colour the current letter keeps (the rest is the text colour). */
+  --key-label-opacity: 0.35;
+  --done-opacity: 0.55;
+  --letter-tint: 100%;
+
+  /* One colour per finger: 0-3 left pinky..index, 4-5 thumbs, 6-9 right index..pinky */
+  --f0: #ff6b6b;
+  --f1: #ff9f43;
+  --f2: #f5cd47;
+  --f3: #5ccf7a;
+  --f4: #c9ced9;
+  --f5: #c9ced9;
+  --f6: #3fd0c0;
+  --f7: #5aa2ff;
+  --f8: #a886f7;
+  --f9: #f277c6;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #f6f5f1;
+  --text: #1c1e24;
+  --muted: #6c7180;
+  --key-line: #9aa0ad;
+  --skin: #ecdccb;
+  --skin-line: #8c7b6a;
+  --error: #d3232f;
+  --success: #2f9e52;
+
+  --key-label-opacity: 0.65;
+  --done-opacity: 0.85;
+  --letter-tint: 60%;
+
+  --f0: #e5484d;
+  --f1: #e8730c;
+  --f2: #d19b00;
+  --f3: #2f9e52;
+  --f4: #5f6675;
+  --f5: #5f6675;
+  --f6: #0e9f8e;
+  --f7: #2f73e0;
+  --f8: #7d4fd6;
+  --f9: #d23f9c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+}
+
+/* ---------- Keyboard (background layer) ---------- */
+
+#keyboard {
+  position: fixed;
+  top: 46vh;
+  left: 50%;
+  width: min(94vw, 125vh);
+  transform: translate(-50%, -50%);
+}
+
+.key rect {
+  fill: transparent;
+  stroke: color-mix(in srgb, var(--f, var(--key-line)) 55%, var(--key-line));
+  stroke-width: 1.5;
+  opacity: 0.45;
+  transition: fill 120ms, opacity 120ms;
+}
+
+.key text {
+  fill: var(--text);
+  opacity: var(--key-label-opacity);
+  font-size: 18px;
+  text-anchor: middle;
+  dominant-baseline: central;
+  transition: opacity 120ms;
+}
+
+.key.mod text {
+  font-size: 11px;
+}
+
+.key .bump {
+  stroke: var(--text);
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: var(--key-label-opacity);
+}
+
+/* Home row: always tinted in its finger's colour, as a reminder of where the
+   fingers rest. Sits before .active and .wrong so those still win. */
+.key.home rect {
+  fill: color-mix(in srgb, var(--f) 22%, transparent);
+  stroke: var(--f);
+  stroke-width: 2;
+  opacity: 0.9;
+}
+
+.key.home text,
+.key.home .bump {
+  opacity: calc(var(--key-label-opacity) + 0.3);
+}
+
+.key.active rect {
+  fill: var(--f);
+  stroke: var(--f);
+  opacity: 1;
+}
+
+.key.active text {
+  fill: #14161b;
+  opacity: 1;
+  font-weight: 700;
+}
+
+.key.wrong rect {
+  fill: var(--error);
+  stroke: var(--error);
+  opacity: 0.9;
+}
+
+/* ---------- Word prompt ---------- */
+
+.stats {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1; /* above the prompt, so the mode buttons can be clicked */
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.stats > :last-child {
+  text-align: right;
+}
+
+.modes {
+  display: flex;
+  gap: 6px;
+}
+
+.modes button {
+  padding: 4px 10px;
+  border: 1.5px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.modes button:hover,
+.modes button:focus-visible {
+  color: var(--text);
+}
+
+.modes button[aria-pressed="true"] {
+  border-color: var(--key-line);
+  color: var(--text);
+}
+
+.stats span {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.prompt {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 25vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1vh;
+  padding-top: 34px; /* clears the header */
+}
+
+.word {
+  /* --chars is the length of the text; long lines shrink to fit the width. */
+  font-size: min(clamp(2.2rem, 9vh, 5.5rem), calc(92vw / var(--chars, 1) / 0.68));
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  white-space: pre;
+}
+
+.word.shake {
+  animation: shake 220ms;
+}
+
+.letter {
+  display: inline-block;
+  border-bottom: 0.06em solid transparent;
+  padding-bottom: 0.08em;
+}
+
+.letter.done {
+  color: var(--muted);
+  opacity: var(--done-opacity);
+}
+
+.letter.current {
+  color: color-mix(in srgb, var(--f) var(--letter-tint), var(--text));
+  border-bottom-color: var(--f);
+}
+
+.letter.space {
+  font-weight: 400;
+  opacity: var(--key-label-opacity);
+}
+
+.letter.space.current {
+  opacity: 1;
+}
+
+.progress:not(:empty)::after {
+  content: " ·";
+}
+
+.hint {
+  min-height: 1.2em;
+  color: var(--muted);
+  font-size: clamp(0.8rem, 2vh, 1rem);
+}
+
+/* Ten lights, one per finger in hand order, in two groups of five. The
+   fingers to use light up; the rest stay faint in their own colour. */
+.lights {
+  display: flex;
+  gap: clamp(14px, 2.5vh, 24px);
+}
+
+.light-group {
+  display: flex;
+  gap: clamp(4px, 0.8vh, 7px);
+}
+
+.light {
+  width: clamp(7px, 1.2vh, 10px);
+  height: clamp(7px, 1.2vh, 10px);
+  border-radius: 50%;
+  background: var(--f);
+  opacity: 0.18;
+  transition: opacity 120ms, box-shadow 120ms;
+}
+
+.light.active {
+  opacity: 1;
+  box-shadow: 0 0 6px var(--f);
+}
+
+/* ---------- Rewards ---------- */
+
+.spark {
+  position: fixed;
+  z-index: 2;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 50%;
+  background: var(--c);
+  pointer-events: none;
+  animation: spark 700ms ease-out forwards;
+}
+
+/* Big moments: the end of a drill or passage, or a run of clean words.
+   Between the hands, so it never hides the next key on the keyboard. */
+.banner {
+  position: fixed;
+  top: 86vh;
+  left: 50%;
+  z-index: 2;
+  padding: 12px 28px;
+  border: 2px solid var(--success);
+  border-radius: 14px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: clamp(1.1rem, 4vh, 2rem);
+  font-weight: 700;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.banner.show {
+  animation: banner 1800ms ease-out forwards;
+}
+
+@keyframes spark {
+  from {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) scale(0.3);
+  }
+}
+
+@keyframes banner {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  12% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.06);
+  }
+  20%,
+  80% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes banner-fade {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  10%,
+  80% {
+    opacity: 1;
+  }
+}
+
+/* ---------- Theme switch ---------- */
+
+.theme-toggle {
+  position: fixed;
+  right: 16px;
+  bottom: 14px;
+  z-index: 1;
+  padding: 6px 12px;
+  border: 1.5px solid var(--key-line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.theme-toggle:hover,
+.theme-toggle:focus-visible {
+  border-color: var(--text);
+  color: var(--text);
+}
+
+/* ---------- Hands ---------- */
+
+#hands {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  height: 34vh;
+  max-width: 100vw;
+  transform: translateX(-50%);
+  overflow: visible;
+}
+
+.skin {
+  fill: var(--skin);
+  stroke: var(--skin-line);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  transition: fill 120ms, stroke 120ms;
+}
+
+.nail {
+  fill: var(--f);
+  opacity: 0.75;
+}
+
+.finger.active .skin {
+  fill: var(--f);
+  stroke: var(--f);
+}
+
+.finger.active .nail {
+  fill: #14161b;
+  opacity: 0.35;
+}
+
+/* Reaching for a key: the hand slides and the finger turns and stretches.
+   app.js sets both transforms. */
+.hand,
+.aim {
+  transition: transform 220ms ease-out;
+}
+
+/* The .move group's origin is the knuckle, so scaling reads as a press. */
+.finger.active .move {
+  animation: tap 900ms ease-in-out infinite;
+}
+
+@keyframes tap {
+  0%,
+  45%,
+  100% {
+    transform: scaleY(1);
+  }
+  20% {
+    transform: scaleY(0.92);
+  }
+}
+
+@keyframes shake {
+  25% {
+    transform: translateX(-8px);
+  }
+  75% {
+    transform: translateX(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .finger.active .move,
+  .word.shake {
+    animation: none;
+  }
+
+  .hand,
+  .aim,
+  .light {
+    transition: none;
+  }
+
+  .banner.show {
+    animation-name: banner-fade;
+  }
+}
